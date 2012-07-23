@@ -6,6 +6,7 @@ use Exporter;
 use Digest::MD5 qw(md5_base64);
 use Carp;
 
+our @ISA = qw(Exporter);
 our @EXPORT = qw();
 our @EXPORT_OK = qw(
   shortcode_available
