@@ -1,0 +1,84 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use File::Basename;
+use Getopt::Long qw(:config no_ignore_case bundling);
+use Algorithm::URL::Shorten qw(shorten_url);
+use File::Slurp;
+use YAML qw(LoadFile DumpFile Dump);
+use FindBin qw($Bin);
+
+sub usage {
+  warn @_ if @_;
+  die "usage: " . basename($0) . " <url> [<shortcode>]\n";
+}
+
+$|++;
+
+my $verbose = 0;
+my ($help, $noop);
+usage unless GetOptions(
+  'help|h|?'        => \$help,
+  'verbose|v+'      => \$verbose,
+);
+usage if $help;
+usage unless @ARGV;
+
+my $url  = shift @ARGV;
+my $code = shift @ARGV;
+# Sanity checks
+die "URL doesn't start with http? $url\n" if $url !~ m!^https?://!;
+
+# Load config and db
+my $config = LoadFile("$Bin/data/config.yml");
+my $base_url = $config->{base_url}
+  or die "No base_url setting found in config.yml\n";
+my $dbfile = $config->{db} || "$Bin/data/db.yml";
+my $db = -f $dbfile ? LoadFile($dbfile) : {};
+
+# Check or generate code
+if ($code) {
+  if (exists $db->{$code}) {
+    if ($db->{$code} eq $url) {
+      die "Already in db: $base_url/$code => $url\n";
+    }
+    else {
+      die "Shortcode '$code' already exists in db, mapping to: $url\n";
+    }
+  }
+}
+else {
+  for my $candidate (@{ shorten_url($url) }) {
+    if (exists $db->{$candidate}) {
+      die "URL already exists in db: $base_url/$candidate\n" if $db->{candidate} eq $url;
+      next;     # try next candidate
+    }
+    else {
+      $code = $candidate;
+      last;
+    }
+  }
+}
+die "Failed to generate unused code - perhaps supply one manually?\n"
+  if not $code;
+
+# Add code to db and save to disk
+$db->{$code} = $url;
+DumpFile("$dbfile.tmp", $db)
+  and rename("$dbfile.tmp", $dbfile)
+    or die "Saving database failed: $!";
+
+# Generate new redirect page in htdocs
+my $template = read_file("$Bin/data/template.html");
+$template =~ s/<% URL %>/$url/gs;
+my $outfile = "$Bin/htdocs/$code.html";
+open my $fh, '>', $outfile
+  or die "Cannot open '$outfile' for output: $!";
+print $fh $template
+  or die "Cannot write to $outfile: $!";
+close $fh;
+
+# Report
+print "Done: $base_url/$code\n";
+

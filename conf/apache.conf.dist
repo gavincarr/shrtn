@@ -1,0 +1,6 @@
+<VirtualHost 1.2.3.4>
+  DocumentRoot /path/to/root
+  ServerName example.com
+  DefaultType text/html
+  CustomLog logs/shrtn-access.log combined
+</VirtualHost>
