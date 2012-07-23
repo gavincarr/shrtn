@@ -11,6 +11,9 @@ use FindBin qw($Bin);
 use lib "$Bin/lib";
 use Shrtn::Utils qw(shortcode_available get_shortcode);
 
+my $CONFIG_FILE = "$Bin/data/config.yml";
+my $DB_FILE     = "$Bin/data/db.yml";
+
 sub usage {
   warn @_ if @_;
   die "usage: " . basename($0) . " <url> [<shortcode>]\n";
@@ -32,26 +35,26 @@ my $code = shift @ARGV;
 # Sanity checks
 die "URL doesn't start with http? $url\n" if $url !~ m!^https?://!;
 
-# Load config and db
-my $config = LoadFile("$Bin/data/config.yml");
+# Setup
+my $config = LoadFile($CONFIG_FILE);
+my $db_file = $config->{db} || $DB_FILE;
+my $db = -f $db_file ? LoadFile($db_file) : {};
 my $base_url = $config->{base_url}
   or die "No base_url setting found in config.yml\n";
-my $dbfile = $config->{db} || "$Bin/data/db.yml";
-my $db = -f $dbfile ? LoadFile($dbfile) : {};
 
-# Check or generate code
 if ($code) {
   # Check if $code is available in $db, dying if not
   shortcode_available($code, $db, $url, { base_url => $base_url, die => 1 });
 }
 else {
+  # Generate new shortcode for $url
   $code = get_shortcode($db, $url);
 }
 
 # Add code to db and save to disk
 $db->{$code} = $url;
-DumpFile("$dbfile.tmp", $db)
-  and rename("$dbfile.tmp", $dbfile)
+DumpFile("$db_file.tmp", $db)
+  and rename("$db_file.tmp", $db_file)
     or die "Saving database failed: $!";
 
 # Generate new redirect page in htdocs
@@ -65,5 +68,5 @@ print $fh $template
 close $fh;
 
 # Report
-print "Done: $base_url/$code\n";
+print "OK: $base_url/$code\n";
 
