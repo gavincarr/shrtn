@@ -1,9 +1,9 @@
 server {
-    server_name example.com;
+    server_name EXAMPLE.COM;
     access_log  /var/log/nginx/shrtn.access.log;
 
     location / {
-        root /path/to/root;
+        root /PATH/TO/SHRTN/HTDOCS;
         try_files $uri.html $uri $uri/;
     }
 }
