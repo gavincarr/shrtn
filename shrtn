@@ -4,10 +4,12 @@ use strict;
 use warnings;
 use File::Basename;
 use Getopt::Long qw(:config no_ignore_case bundling);
-use Algorithm::URL::Shorten qw(shorten_url);
 use File::Slurp;
 use YAML qw(LoadFile DumpFile Dump);
+
 use FindBin qw($Bin);
+use lib "$Bin/lib";
+use Shrtn::Utils qw(shortcode_available get_shortcode);
 
 sub usage {
   warn @_ if @_;
@@ -39,29 +41,12 @@ my $db = -f $dbfile ? LoadFile($dbfile) : {};
 
 # Check or generate code
 if ($code) {
-  if (exists $db->{$code}) {
-    if ($db->{$code} eq $url) {
-      die "Already in db: $base_url/$code => $url\n";
-    }
-    else {
-      die "Shortcode '$code' already exists in db, mapping to: $url\n";
-    }
-  }
+  # Check if $code is available in $db, dying if not
+  shortcode_available($code, $db, $url, { base_url => $base_url, die => 1 });
 }
 else {
-  for my $candidate (@{ shorten_url($url) }) {
-    if (exists $db->{$candidate}) {
-      die "URL already exists in db: $base_url/$candidate\n" if $db->{candidate} eq $url;
-      next;     # try next candidate
-    }
-    else {
-      $code = $candidate;
-      last;
-    }
-  }
+  $code = get_shortcode($db, $url);
 }
-die "Failed to generate unused code - perhaps supply one manually?\n"
-  if not $code;
 
 # Add code to db and save to disk
 $db->{$code} = $url;
