@@ -2,7 +2,7 @@ package Shrtn::Utils;
 
 use strict;
 use warnings;
-use Exporter::Lite;
+use Exporter;
 use Digest::MD5 qw(md5_base64);
 use Carp;
 
