@@ -18,16 +18,22 @@ Usage
 shrtn is a just a script that generates your shortcodes and redirect html
 pages for you. Usage is:
 
-    ./shrtn <url> [<code>]
+```bash
+./shrtn <url> [<code>]
+```
 
 e.g.
 
-    ./shrtn http://www.example.com/amazing_piece_of_newness
+```bash
+./shrtn http://www.example.com/amazing_piece_of_newness
+```
 
 You can optionally supply your own shortcode, which shrtn will use if
 available:
 
-    ./shrtn http://www.openfusion.net/ ofn
+```bash
+./shrtn http://www.openfusion.net/ ofn
+```
 
 shrtn is written in perl; the only requirement is Digest::MD5, which is
 in core for perl >= 5.7.3.
@@ -38,25 +44,27 @@ Setup
 
 Pretty simple (unix version):
 
-    git clone https://github.com/gavincarr/shrtn.git
-    cd shrtn
+```bash
+git clone https://github.com/gavincarr/shrtn.git
+cd shrtn
 
-    # Copy the example data/config.yml.dist and update the base_url setting
-    cp data/config.yml.dist data/config.yml
-    $EDITOR data/config.yml
+# Copy the example data/config.yml.dist and update the base_url setting
+cp data/config.yml.dist data/config.yml
+$EDITOR data/config.yml
 
-    # Copy and tweak the appropriate webserver config
-    # e.g. apache:
-    cp conf/apache.conf.dist conf/apache.conf
-    $EDITOR conf/apache.conf
-    sudo ln -s /etc/httpd/conf.d/shrtn.conf $PWD/conf/apache.conf
-    # e.g. nginx:
-    cp conf/nginx.conf.dist conf/nginx.conf
-    $EDITOR conf/nginx.conf
-    sudo ln -s /etc/nginx/conf.d/shrtn.conf $PWD/conf/nginx.conf
+# Copy and tweak the appropriate webserver config
+# e.g. apache:
+cp conf/apache.conf.dist conf/apache.conf
+$EDITOR conf/apache.conf
+sudo ln -s /etc/httpd/conf.d/shrtn.conf $PWD/conf/apache.conf
+# e.g. nginx:
+cp conf/nginx.conf.dist conf/nginx.conf
+$EDITOR conf/nginx.conf
+sudo ln -s /etc/nginx/conf.d/shrtn.conf $PWD/conf/nginx.conf
 
-    # Restart webserver
-     
+# Restart webserver
+```
+  
 Done!
 
 
