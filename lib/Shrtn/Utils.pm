@@ -10,6 +10,7 @@ our @EXPORT = qw();
 our @EXPORT_OK = qw(
   shortcode_available
   get_shortcode
+  generate_new_redirect_page
 );
 
 # Check if $code is available in $db, returning 1 if so.
@@ -64,6 +65,35 @@ sub get_shortcode
   }
 
   die "Failed to generate unused shortcode for url $url - perhaps supply one manually?\n";
+}
+
+# Generate a new $code.html redirect page
+sub generate_new_redirect_page
+{
+  my ($Bin, $code, $url) = @_;
+
+  # Read template
+  my $template_file = "$Bin/data/template.html";
+  my $template;
+  open my $tfh, '<', $template_file
+    or die "Cannot open '$template_file' for input: $!";
+  {
+    local $/;
+    $template = <$tfh>;
+    die "No template content found\n" if length $template < 100;
+  }
+  close $tfh;
+
+  # Munge template
+  $template =~ s/<% URL %>/$url/gs;
+
+  # Generate
+  my $outfile = "$Bin/htdocs/$code.html";
+  open my $fh, '>', $outfile
+    or die "Cannot open '$outfile' for output: $!";
+  print $fh $template
+    or die "Cannot write to $outfile: $!";
+  close $fh;
 }
 
 1;

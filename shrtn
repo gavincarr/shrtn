@@ -4,12 +4,11 @@ use strict;
 use warnings;
 use File::Basename;
 use Getopt::Long qw(:config no_ignore_case bundling);
-use File::Slurp;
 use YAML qw(LoadFile DumpFile Dump);
 
 use FindBin qw($Bin);
 use lib "$Bin/lib";
-use Shrtn::Utils qw(shortcode_available get_shortcode);
+use Shrtn::Utils qw(shortcode_available get_shortcode generate_new_redirect_page);
 
 my $CONFIG_FILE = "$Bin/data/config.yml";
 my $DB_FILE     = "$Bin/data/db.yml";
@@ -51,21 +50,16 @@ else {
   $code = get_shortcode($db, $url);
 }
 
-# Add code to db and save to disk
+# Add code to db
 $db->{$code} = $url;
+
+# Save db to disk
 DumpFile("$db_file.tmp", $db)
   and rename("$db_file.tmp", $db_file)
     or die "Saving database failed: $!";
 
-# Generate new redirect page in htdocs
-my $template = read_file("$Bin/data/template.html");
-$template =~ s/<% URL %>/$url/gs;
-my $outfile = "$Bin/htdocs/$code.html";
-open my $fh, '>', $outfile
-  or die "Cannot open '$outfile' for output: $!";
-print $fh $template
-  or die "Cannot write to $outfile: $!";
-close $fh;
+# Generate new redirect page
+generate_new_redirect_page($Bin, $code, $url);
 
 # Report
 print "OK: $base_url/$code\n";
