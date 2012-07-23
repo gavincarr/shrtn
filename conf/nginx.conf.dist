@@ -1,0 +1,10 @@
+server {
+    server_name example.com;
+    access_log  /var/log/nginx/shrtn.access.log;
+
+    location / {
+        root /path/to/root;
+        try_files $uri.html $uri $uri/;
+    }
+}
+
