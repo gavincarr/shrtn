@@ -25,7 +25,6 @@ sub shortcode_available
   my $base_url = $arg->{base_url};
 
   return 1 if not exists $db->{$code};
-  return 2 if $db->{$code} eq $url and not $die;
 
   return 0 unless $die;
 
@@ -42,10 +41,19 @@ sub shortcode_available
 
 # Generate a series of candidate shortcodes from the md5 checksum of $url,
 # and check against $db hash
+my %url_db;
 sub get_shortcode
 {
   my ($db, $url) = @_;
   croak "Invalid db '$db' - not a hashref" unless ref $db and ref $db eq 'HASH';
+
+  # Invert $db to allow a url check (required for custom codes, in particular)
+  if (not %url_db) {
+    while (my ($code, $url) = each %$db) {
+      $url_db{$url} = $code;
+    }
+  }
+  return $url_db{$url} if exists $url_db{$url};
 
   # Prep checksum
   my $checksum = md5_base64($url);
