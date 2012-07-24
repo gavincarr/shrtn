@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use Exporter;
 use Digest::MD5 qw(md5_base64);
+use YAML qw(DumpFile);
 use Carp;
 
 our @ISA = qw(Exporter);
@@ -11,6 +12,7 @@ our @EXPORT = qw();
 our @EXPORT_OK = qw(
   shortcode_available
   get_shortcode
+  save_db
   generate_new_redirect_page
 );
 
@@ -66,6 +68,15 @@ sub get_shortcode
   }
 
   die "Failed to generate unused shortcode for url $url - perhaps supply one manually?\n";
+}
+
+sub save_db
+{
+  my ($db, $db_file) = @_;
+
+  DumpFile("$db_file.tmp", $db)
+    and rename("$db_file.tmp", $db_file)
+      or die "Saving database failed: $!";
 }
 
 # Generate a new $code.html redirect page

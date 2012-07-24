@@ -4,11 +4,11 @@ use strict;
 use warnings;
 use File::Basename;
 use Getopt::Long qw(:config no_ignore_case bundling);
-use YAML qw(LoadFile DumpFile Dump);
+use YAML qw(LoadFile Dump);
 
 use FindBin qw($Bin);
 use lib "$Bin/lib";
-use Shrtn::Utils qw(shortcode_available get_shortcode generate_new_redirect_page);
+use Shrtn::Utils qw(shortcode_available get_shortcode save_db generate_new_redirect_page);
 
 my $CONFIG_FILE = "$Bin/data/config.yml";
 my $DB_FILE     = "$Bin/data/db.yml";
@@ -54,9 +54,7 @@ else {
 $db->{$code} = $url;
 
 # Save db to disk
-DumpFile("$db_file.tmp", $db)
-  and rename("$db_file.tmp", $db_file)
-    or die "Saving database failed: $!";
+save_db($db => $db_file);
 
 # Generate new redirect page
 generate_new_redirect_page($Bin, $code, $url);
