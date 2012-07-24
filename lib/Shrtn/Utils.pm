@@ -25,6 +25,7 @@ sub shortcode_available
   my $base_url = $arg->{base_url};
 
   return 1 if not exists $db->{$code};
+  return 2 if $db->{$code} eq $url and not $die;
 
   return 0 unless $die;
 
