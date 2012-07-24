@@ -11,6 +11,9 @@ Shrtn (pronounced "shorten"!) is a tiny url shortener inspired by @joemoreno,
 (TL;DR version: redirects just use static html files with meta refresh
 headers, so you just need a basic web server, no database, no dynamic code)
 
+The set of mappings from codes to urls is just stored in a yaml text file,
+so it is trivial to backup etc.
+
 
 Usage
 -----
@@ -35,8 +38,8 @@ available:
 ./shrtn http://www.openfusion.net/ ofn
 ```
 
-shrtn is written in perl; the only requirement is Digest::MD5, which is
-in core for perl >= 5.7.3.
+shrtn is written in perl; the only requirements are YAML and Digest::MD5
+(the latter is in core for perl >= 5.7.3).
 
 
 Setup
