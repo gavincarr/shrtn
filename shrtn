@@ -62,3 +62,14 @@ generate_new_redirect_page($Bin, $code, $url);
 # Report
 print "OK: $base_url/$code\n";
 
+# If data directory is a git directory, do a git add/commit/push
+if (-d "$Bin/data/.git") {
+  chdir "$Bin/data" or die "Cannot chdir to $Bin/data: $!";
+  system(split /\s+/, "git add .") == 0
+    or die "git add failed: $?/$!";
+  system(split /\s+/, "git commit -m 'Add $code => $url'") == 0
+    or die "git commit failed: $?/$!";
+  system(split /\s+/, "git push") == 0
+    or die "git push failed: $?/$!";
+}
+
