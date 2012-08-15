@@ -67,7 +67,7 @@ if (-d "$Bin/data/.git") {
   chdir "$Bin/data" or die "Cannot chdir to $Bin/data: $!";
   system(split /\s+/, "git add .") == 0
     or die "git add failed: $?/$!";
-  system(split /\s+/, "git commit -m 'Add $code => $url'") == 0
+  system(split /\s+/, "git commit -m 'Add $code => $url'", 4) == 0
     or die "git commit failed: $?/$!";
   system(split /\s+/, "git push") == 0
     or die "git push failed: $?/$!";
