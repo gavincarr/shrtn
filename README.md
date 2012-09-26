@@ -14,6 +14,9 @@ headers, so you just need a basic web server, no database, no dynamic code)
 The set of mappings from codes to urls is just stored in a yaml text file,
 so it is trivial to backup etc.
 
+shrtn will also auto-commit and push updates if it detects `data` is a git
+directory.
+
 
 Usage
 -----
@@ -68,8 +71,21 @@ sudo ln -s /etc/nginx/conf.d/shrtn.conf $PWD/conf/nginx.conf
 # Restart webserver
 ```
   
-Done!
+In addition, if you want to auto-commit your shortenings to github, you
+can create a new repo on github (I'm using 'shrtn-data'), and clone it
+as your data directory e.g.
 
+```bash
+mv data data.dist
+git clone https://github.com/USER/shrtn-data data
+cp data.dist/*ml data
+cd data
+git add *
+git commit -m 'Initial import.'
+```
+
+After this `shrtn` will auto-commit and push any new shortenings you add
+to github.
 
 
 Author and Licence
