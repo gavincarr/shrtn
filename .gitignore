@@ -1,5 +1,4 @@
 .*.sw?
 *~
 TODO
-data/*.yml
-data/.gitignore
+data
