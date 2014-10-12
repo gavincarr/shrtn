@@ -1,9 +1,13 @@
 #!/usr/bin/perl
+#
+# Script to add a new shrtn url mapping to db, and generate redirect page
+#
 
 use strict;
 use warnings;
 use File::Basename;
 use Getopt::Long qw(:config no_ignore_case bundling);
+use File::Spec;
 use YAML qw(LoadFile Dump);
 
 use FindBin qw($Bin);
@@ -27,7 +31,7 @@ usage unless GetOptions(
   'verbose|v+'      => \$verbose,
 );
 usage if $help;
-usage unless @ARGV;
+usage if ! @ARGV;
 
 my $url  = shift @ARGV;
 my $code = shift @ARGV;
@@ -35,8 +39,11 @@ my $code = shift @ARGV;
 die "URL doesn't start with http? $url\n" if $url !~ m!^https?://!;
 
 # Setup
+-f $CONFIG_FILE
+  or die "Config file $CONFIG_FILE not found - have you run shrtn_setup?\n";
 my $config = LoadFile($CONFIG_FILE);
 my $db_file = $config->{db} || $DB_FILE;
+$db_file = File::Spec->rel2abs($db_file, $Bin);
 my $db = -f $db_file ? LoadFile($db_file) : {};
 my $base_url = $config->{base_url}
   or die "No base_url setting found in config.yml\n";
@@ -60,16 +67,24 @@ save_db($db => $db_file);
 generate_new_redirect_page($Bin, $code, $url);
 
 # Report
-print "OK: $base_url/$code\n";
+print "OK: $base_url/$code => $url\n";
 
 # If data directory is a git directory, do a git add/commit/push
 if (-d "$Bin/data/.git") {
   chdir "$Bin/data" or die "Cannot chdir to $Bin/data: $!";
+  print "\n";
   system(split /\s+/, "git add .") == 0
     or die "git add failed: $?/$!";
   system(split /\s+/, "git commit -m 'Add $code => $url'", 4) == 0
     or die "git commit failed: $?/$!";
   system(split /\s+/, "git push") == 0
     or die "git push failed: $?/$!";
+}
+
+# And push remotely if config 'rsync_path' is set
+if (my $rsync_path = $config->{rsync_path}) {
+  my $rsync_cmd = "rsync -cv $Bin/htdocs/* $rsync_path";
+  print "\n$rsync_cmd\n";
+  system($rsync_cmd) == 0 or die "rsync failed: $?/$!";
 }
 
