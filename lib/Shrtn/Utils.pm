@@ -3,7 +3,7 @@ package Shrtn::Utils;
 use strict;
 use warnings;
 use Exporter;
-use Digest::MD5 qw(md5_base64);
+use Digest::MD5 qw(md5_hex);
 use YAML qw(DumpFile);
 use Carp;
 
@@ -47,23 +47,20 @@ sub get_shortcode
   my ($db, $url) = @_;
   croak "Invalid db '$db' - not a hashref" unless ref $db and ref $db eq 'HASH';
 
-  # Invert $db to allow a url check (required for custom codes, in particular)
+  # Invert $db to return an existing code if one exists for that URL
   if (not %url_db) {
-    while (my ($code, $url) = each %$db) {
-      $url_db{$url} = $code;
-    }
+    # Note we ignore collisions here - if a URL is repeated, we'll pick one of its codes at random
+    %url_db = reverse %$db;
   }
   return $url_db{$url} if exists $url_db{$url};
 
   # Prep checksum
-  my $checksum = md5_base64($url);
-  # Remove '+' and '/' characters
-  $checksum =~ s![+/]+!!g;
+  my $checksum = uc md5_hex($url);
 
   # Search subchunks of $checksum to find first unused
   my $copy = $checksum;
   my $length = 3;
-  while ($length <= 6) {
+  while ($length <= 8) {
     while ($copy =~ m/^(.{$length})(.*)/) {
       my $candidate = $1;
       $copy = $2;
