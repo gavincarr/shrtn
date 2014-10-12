@@ -32,10 +32,11 @@ sub shortcode_available
   my $db_url = $db->{$code};
   my $display = $base_url ? "$base_url/$code" : $code;
   if ($url and $db_url eq $url) {
-    die "URL is already in db with that code: $display => $url\n";
+    die "Code '$code' already exists in db pointing to that URL => $url\n";
   }
   else {
-    die "Code $code is already used in db: $display => $db_url\n";
+    warn "Code '$code' already exists in db => $db_url\n";
+    die  "(use --force option to force the '$code' URL to be updated)\n";
   }
 }
 
