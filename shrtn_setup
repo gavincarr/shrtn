@@ -1,0 +1,40 @@
+#!/usr/bin/perl
+#
+# Trivial shrtn setup script, creating and populating initial data directory
+#
+
+use strict;
+use warnings;
+use File::Basename;
+use File::Copy;
+use FindBin qw($Bin);
+
+-d "$Bin/data"
+  and die "Error: 'data' directory already exists - won't overwrite\n";
+
+mkdir "$Bin/data"
+  or die "Error: mkdir of 'data' directory failed: $!\n";
+
+# Copy config.yml.dist and template.html.dist
+for my $f (glob("$Bin/conf/*ml.dist")) {
+  my $from = basename($f);
+  my $to = $from;
+  $to =~ s/\.dist$//;
+
+  print "cp conf/$from data/$to\n";
+
+  copy($f, "$Bin/data/$to")
+    or die "copy failed: $!\n";
+}
+
+# Ask/copy webserver configs
+for my $webserver (qw(apache nginx)) {
+  print "Copy $webserver.conf.dist? [n] ";
+  my $ans = <>;
+  if ($ans && $ans =~ /^y/i) {
+    print "cp conf/$webserver.conf.dist data/$webserver.conf\n";
+    copy("$Bin/conf/$webserver.conf.dist", "$Bin/data/$webserver.conf")
+      or die "copy failed: $!\n";
+  }
+}
+
