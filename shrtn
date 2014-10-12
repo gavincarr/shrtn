@@ -25,10 +25,11 @@ sub usage {
 $|++;
 
 my $verbose = 0;
-my ($help, $noop);
+my ($help, $force);
 usage unless GetOptions(
   'help|h|?'        => \$help,
   'verbose|v+'      => \$verbose,
+  'force|f'         => \$force,
 );
 usage if $help;
 usage if ! @ARGV;
@@ -49,8 +50,9 @@ my $base_url = $config->{base_url}
   or die "No base_url setting found in config.yml\n";
 
 if ($code) {
-  # Check if $code is available in $db, dying if not
-  shortcode_available($code, $db, $url, { base_url => $base_url, die => 1 });
+  # Check if $code is available in $db, dying if not (unless $force is set)
+  my $die = $force ? 0 : 1;
+  shortcode_available($code, $db, $url, { base_url => $base_url, die => $die });
 }
 else {
   # Generate new shortcode for $url
