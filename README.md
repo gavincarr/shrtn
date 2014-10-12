@@ -79,8 +79,8 @@ sudo ln -s /etc/nginx/conf.d/shrtn.conf $PWD/data/nginx.conf
 # If you're going to push your redirect files to a remote webserver, copy
 # your shrtn webserver configs remotely, and make sure you set 'rsync_path'
 # in your data/config.yml. e.g.
-scp data/apache.conf WEBSERVER:/etc/httpd/conf.d
-scp data/nginx.conf  WEBSERVER:/etc/nginx/conf.d
+scp data/apache.conf WEBSERVER:/etc/httpd/conf.d/shrtn.conf
+scp data/nginx.conf  WEBSERVER:/etc/nginx/conf.d/shrtn.conf
 ```
   
 In addition, if you want to auto-commit your shortenings to github, you
