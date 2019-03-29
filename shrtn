@@ -3,6 +3,7 @@
 # Script to add a new shrtn url mapping to db, and generate redirect page
 #
 
+use 5.010;
 use strict;
 use warnings;
 use File::Basename;
@@ -12,32 +13,42 @@ use YAML qw(LoadFile Dump);
 
 use FindBin qw($Bin);
 use lib "$Bin/lib";
-use Shrtn::Utils qw(shortcode_available get_shortcode save_db generate_new_redirect_page);
+use Shrtn::Utils qw(
+  shortcode_available
+  get_shortcode
+  save_db
+  generate_new_redirect_html_page
+  generate_new_redirect_s3_object
+);
 
-my $CONFIG_FILE = "$Bin/data/config.yml";
+my $CONFIG_FILE = "$Bin/conf/config.yml";
 my $DB_FILE     = "$Bin/data/db.yml";
 
 sub usage {
   warn @_ if @_;
-  die "usage: " . basename($0) . " <url> [<shortcode>]\n";
+  warn "usage: " . basename($0) . " <url> [<shortcode>]\n";
+  die  "   or: " . basename($0) . " --all\n";
 }
 
 $|++;
 
-my $verbose = 0;
-my ($help, $force);
+my ($help, $all, $force);
 usage unless GetOptions(
   'help|h|?'        => \$help,
-  'verbose|v+'      => \$verbose,
+  'all|a'           => \$all,
   'force|f'         => \$force,
 );
 usage if $help;
-usage if ! @ARGV;
+usage if ! @ARGV && ! $all;
+usage "Cannot specify --all with arguments\n" if @ARGV && $all;
 
-my $url  = shift @ARGV;
-my $code = shift @ARGV;
-# Sanity checks
-die "URL doesn't start with http? $url\n" if $url !~ m!^https?://!;
+my ($url, $code);
+if (@ARGV) {
+  $url  = $ARGV[0];
+  $code = $ARGV[1];
+  # Sanity check $url
+  die "URL doesn't start with http? $url\n" if $url !~ m!^https?://!;
+}
 
 # Setup
 -f $CONFIG_FILE
@@ -46,33 +57,46 @@ my $config = LoadFile($CONFIG_FILE);
 my $db_file = $config->{db} || $DB_FILE;
 $db_file = File::Spec->rel2abs($db_file, $Bin);
 my $db = -f $db_file ? LoadFile($db_file) : {};
-my $base_url = $config->{base_url}
-  or die "No base_url setting found in config.yml\n";
 
-if ($code) {
-  # Check if $code is available in $db, dying if not (unless $force is set)
-  my $die = $force ? 0 : 1;
-  shortcode_available($code, $db, $url, { base_url => $base_url, die => $die });
+if (@ARGV) {
+  if ($code) {
+    # Check if $code is available in $db, dying if not (unless $force is set)
+    my $die = $force ? 0 : 1;
+    shortcode_available($code, $db, $url, { die => $die });
+  }
+  else {
+    # Generate new shortcode for $url
+    $code = get_shortcode($db, $url);
+  }
+
+  # Add code to db
+  $db->{$code} = $url;
+
+  # Save db to disk
+  save_db($db => $db_file);
 }
-else {
-  # Generate new shortcode for $url
-  $code = get_shortcode($db, $url);
+
+# Generate loop - all codes if $all, otherwise just $code
+my @generate = $all ? keys( %$db) : ( $code );
+for my $c (@generate) {
+  my $u = $db->{$c} or die "Error: DB is missing url for code '$c'\n";
+
+  # Generate new redirect html page if we have a config.generate_html
+  if ($config->{generate_html}) {
+    generate_new_redirect_html_page($Bin, $c, $u);
+  }
+
+  # Generate a new redirect S3 object if we have a config.aws_bucket_name
+  if ($config->{aws_bucket_name}) {
+    generate_new_redirect_s3_object($config, $c, $u);
+  }
+
+  # Report
+  print "OK: $c => $u\n";
 }
-
-# Add code to db
-$db->{$code} = $url;
-
-# Save db to disk
-save_db($db => $db_file);
-
-# Generate new redirect page
-generate_new_redirect_page($Bin, $code, $url);
-
-# Report
-print "OK: $base_url/$code => $url\n";
 
 # If data directory is a git directory, do a git add/commit/push
-if (-d "$Bin/data/.git") {
+if (-d "$Bin/data/.git" && @ARGV) {
   chdir "$Bin/data" or die "Cannot chdir to $Bin/data: $!";
   print "\n";
   system(split /\s+/, "git add .") == 0
@@ -83,8 +107,8 @@ if (-d "$Bin/data/.git") {
     or die "git push failed: $?/$!";
 }
 
-# And push remotely if config 'rsync_path' is set
-if (my $rsync_path = $config->{rsync_path}) {
+# And push remotely if config 'html_rsync_path' is set
+if (my $rsync_path = $config->{html_rsync_path} || $config->{rsync_path}) {
   my $rsync_cmd = "rsync -cv $Bin/htdocs/* $rsync_path";
   print "\n$rsync_cmd\n";
   system($rsync_cmd) == 0 or die "rsync failed: $?/$!";

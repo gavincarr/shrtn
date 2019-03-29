@@ -16,16 +16,15 @@ mkdir "$Bin/data"
   or die "Error: mkdir of 'data' directory failed: $!\n";
 
 # Copy config.yml.dist and template.html.dist
-for my $f (glob("$Bin/conf/*ml.dist")) {
-  my $from = basename($f);
-  my $to = $from;
-  $to =~ s/\.dist$//;
-
-  print "cp conf/$from data/$to\n";
-
-  copy($f, "$Bin/data/$to")
-    or die "copy failed: $!\n";
+if (-f "conf/config.yml") {
+  print "conf/config.yml already exists - skipping\n";
 }
+else {
+  print "cp conf/config.yml.dist conf/config.yml\n";
+  copy("$Bin/conf/config.yml.dist", "$Bin/config/config.yml") or die "copy failed: $!\n";
+}
+print "cp conf/template.html.dist data/template.html\n";
+copy("$Bin/conf/template.html.dist", "$Bin/data/template.html") or die "copy failed: $!\n";
 
 # Ask/copy webserver configs
 for my $webserver (qw(apache nginx)) {

@@ -1,5 +1,6 @@
 package Shrtn::Utils;
 
+use 5.010;
 use strict;
 use warnings;
 use Exporter;
@@ -13,7 +14,8 @@ our @EXPORT_OK = qw(
   shortcode_available
   get_shortcode
   save_db
-  generate_new_redirect_page
+  generate_new_redirect_html_page
+  generate_new_redirect_s3_object
 );
 
 # Check if $code is available in $db, returning 1 if so.
@@ -22,7 +24,6 @@ sub shortcode_available
 {
   my ($code, $db, $url, $arg) = @_;
   my $die = $arg->{die};
-  my $base_url = $arg->{base_url};
 
   return 1 if not exists $db->{$code};
 
@@ -30,7 +31,6 @@ sub shortcode_available
 
   # Going to die - check whether db url matches $url
   my $db_url = $db->{$code};
-  my $display = $base_url ? "$base_url/$code" : $code;
   if ($url and $db_url eq $url) {
     die "Code '$code' already exists in db pointing to that URL => $url\n";
   }
@@ -87,7 +87,7 @@ sub save_db
 }
 
 # Generate a new $code.html redirect page
-sub generate_new_redirect_page
+sub generate_new_redirect_html_page
 {
   my ($Bin, $code, $url) = @_;
 
@@ -113,6 +113,42 @@ sub generate_new_redirect_page
   print $fh $template
     or die "Cannot write to $outfile: $!";
   close $fh;
+}
+
+sub generate_new_redirect_s3_object
+{
+  my ($config, $code, $url) = @_;
+
+  require Net::Amazon::S3;
+  state $client;
+  my $bucket_name = $config->{aws_bucket_name}
+    or die "Missing config 'aws_bucket_name' entry\n";
+
+  if (! $client) {
+    # Check for required config entries
+    my $aws_access_key_id = $config->{aws_access_key_id}
+      or die "Missing config 'aws_access_key_id' entry\n";
+    my $aws_secret_access_key = $config->{aws_secret_access_key}
+      or die "Missing config 'aws_secret_access_key' entry\n";
+
+    my $s3 = Net::Amazon::S3->new(
+      aws_access_key_id     => $aws_access_key_id,
+      aws_secret_access_key => $aws_secret_access_key,
+      retry                 => 1,
+    );
+    $client = Net::Amazon::S3::Client->new( s3 => $s3 );
+  }
+
+  state $bucket = $client->bucket( name => $bucket_name )
+    or die "Error accessing AWS bucket '$bucket_name'\n";
+
+  my $obj = $bucket->object(
+    key             => $code,
+    acl_short       => 'public-read',
+    content_type    => 'text/plain',
+    website_redirect_location => $url,
+  ) or die "Error constructing AWS object: $!";
+  $obj->put('');
 }
 
 1;
